@@ -1,13 +1,17 @@
-// index.js
-import pool from './db.js';
+/* eslint-disable no-undef */
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-async function testDB() {
+dotenv.config();
+
+const connectDB = async () => {
   try {
-    const [rows] = await pool.query('SELECT NOW() AS time');
-    console.log('Connected! Current Time:', rows[0].time);
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('✅ MongoDB Atlas connected');
   } catch (error) {
-    console.error('Database connection failed:', error);
+    console.error('❌ MongoDB connection error:', error);
+    process.exit(1);
   }
-}
+};
 
-testDB();
+connectDB();
