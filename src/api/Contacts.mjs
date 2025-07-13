@@ -1,58 +1,49 @@
+import pool from './db.js';
 class Contacts {
-  constructor() {
-    this.contacts = [
-      {
-        id: 1,
-        name: 'John Doe',
-        phone: '+1 (555) 123-4567',
-        email: 'john.doe@example.com',
-      },
-      {
-        id: 2,
-        name: 'Jane Smith',
-        phone: '+1 (555) 987-6543',
-        email: 'jane.smith@example.com',
-      },
-      {
-        id: 3,
-        name: 'Mike Johnson',
-        phone: '+1 (555) 456-7890',
-        email: 'mike.johnson@example.com',
-      },
-    ];
+  async getAllContacts() {
+    const [rows] = await pool.query('SELECT * FROM contacts');
+    return rows;
   }
 
-  getAllContacts() {
-    return this.contacts;
+  async getContactById(id) {
+    const [rows] = await pool.query('SELECT * FROM contacts WHERE id = ?', [
+      id,
+    ]);
+    return rows[0];
   }
 
-  getContactById(id) {
-    return this.contacts.find((contact) => contact.id === id);
-  }
-
-  createContact(contact) {
-    contact.id = this.contacts.length + 1;
-    this.contacts.push(contact);
+  async createContact(contact) {
+    const { name, phone, email } = contact;
+    const [result] = await pool.query(
+      'INSERT INTO contacts (name, phone, email) VALUES (?, ?, ?)',
+      [name, phone, email]
+    );
     return contact;
   }
 
-  updateContactById(id, updatedContact) {
-    let index = this.contacts.findIndex((contact) => contact.id === id);
+  async updateContactById(id, updatedContact) {
+    const contact = await this.getContactById(id);
+    if (!contact) return null;
 
-    this.contacts[index].name =
-      updatedContact.name || this.contacts[index].name;
-    this.contacts[index].phone =
-      updatedContact.phone || this.contacts[index].phone;
-    this.contacts[index].email =
-      updatedContact.email || this.contacts[index].email;
+    const { name, phone, email } = {
+      ...contact,
+      ...updatedContact,
+    };
 
-    return this.contacts[index];
+    await pool.query(
+      'UPDATE contacts SET name = ?, phone = ?, email = ? WHERE id = ?',
+      [name, phone, email, id]
+    );
+
+    return { id, name, phone, email };
   }
 
-  deleteContactById(id) {
-    const deletedObj = this.contacts.find((contact) => contact.id === id);
-    this.contacts = this.contacts.filter((contact) => contact.id !== id);
-    return deletedObj;
+  async deleteContactById(id) {
+    const contact = await this.getContactById(id);
+    if (!contact) return null;
+
+    await pool.query('DELETE FROM contacts WHERE id = ?', [id]);
+    return contact;
   }
 }
 
