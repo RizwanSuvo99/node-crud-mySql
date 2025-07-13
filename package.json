@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:server": "node src/api/server.mjs",
     "build": "vite build",
-    "preview": "vite preview",
-    "start:api": "node src/api/server.mjs"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -5,7 +5,8 @@ A modern, full-stack CRUD (Create, Read, Update, Delete) application starter bui
 ## Features
 
 - **Frontend**: React 18, Vite, Material UI, Axios
-- **Backend**: Express.js, CORS, Morgan
+- **Backend**: Express.js, CORS, Morgan,MySQL
+- **Database**: MySQL
 - **State Management**: React hooks
 - **API Communication**: RESTful endpoints
 - **Development Tools**: ESLint, Nodemon, Hot Reloading
@@ -17,26 +18,38 @@ A modern, full-stack CRUD (Create, Read, Update, Delete) application starter bui
 
 ```
 Basic Crud/
-├── public/                # Static assets
+├── public/                  # Static assets
 ├── src/
-│   ├── api/               # Backend API (Express server & routes)
-│   ├── assets/            # Images and static assets
-│   ├── components/        # React components (UI)
-│   ├── config/            # API config
-│   ├── data/              # Dummy data for development
-│   └── services/          # API client and hooks
-├── App.jsx                # Main React component
-├── main.jsx               # React entry point
-├── App.css, index.css     # Styles
-├── package.json           # Project metadata & scripts
-├── vite.config.js         # Vite configuration
-├── eslint.config.js       # ESLint configuration
-└── README.md              # Project documentation
+│   ├── api/                 # Backend API (Express server, routes, db config)
+│   │   ├── db.js            # MySQL connection pool setup (NEW)
+│   │   └── server.mjs       # Express app setup
+│   ├── assets/              # Images and static assets
+│   ├── components/          # React components (UI)
+│   ├── config/              # API config
+│   ├── data/                # Dummy data for development
+│   └── services/            # API client and hooks
+├── App.jsx                  # Main React component
+├── main.jsx                 # React entry point
+├── App.css, index.css       # Styles
+├── package.json             # Project metadata & scripts
+├── vite.config.js           # Vite configuration
+├── eslint.config.js         # ESLint configuration
+└── README.md                # Project documentation
 ```
 
 ---
 
 ## Getting Started
+
+1. **Create a .env file in the root of the project and configure your MySQL credentials:**
+
+```
+PORT=8080
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=yourpassword
+DB_NAME=yourdbname
+```
 
 ### Prerequisites
 
@@ -69,7 +82,7 @@ The backend API is located in `src/api/server.mjs` and uses Express.js.
 npm run dev:server
 ```
 
-- The server will start (default: [http://localhost:3001](http://localhost:8080)).
+- The server will start (default: [http://localhost:8080](http://localhost:8080)).
 
 ### 2. Start the Frontend (React + Vite)
 
@@ -89,7 +102,6 @@ npm run dev
 - `npm run dev:server` - Start the Express backend server
 - `npm run build` - Build the frontend for production
 - `npm run preview` - Preview the production build
-- `npm run lint` - Run ESLint for code quality
 
 ---
 
@@ -139,7 +151,7 @@ This project is for educational purposes. You may use, modify, and distribute as
 
 ## Author
 
-- Rizwan Suvo
+- Md Rizwan Uddin (Suvo)
 
 ---
 
