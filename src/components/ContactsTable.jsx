@@ -35,7 +35,7 @@ import {
 
 const emptyContact = { name: '', phone: '', email: '' };
 
-export default function ContactsTable() {
+const ContactsTable = () => {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -50,6 +50,7 @@ export default function ContactsTable() {
       setContacts(data);
     } catch (e) {
       setError('Failed to load contacts');
+      toast.error('Failed to load contacts');
     } finally {
       setLoading(false);
     }
@@ -82,19 +83,30 @@ export default function ContactsTable() {
       toast.error('All fields are required');
       return;
     }
+    setLoading(true);
     try {
       if (editingContact) {
-        await updateContact(editingContact.id, form);
+        const updatedContact = await updateContact(editingContact._id, form);
+        setContacts(
+          contacts.map((contact) =>
+            contact._id === editingContact._id ? updatedContact : contact
+          )
+        );
         toast.success('Contact updated successfully!');
       } else {
-        await createContact(form);
+        const newContact = await createContact(form);
+        setContacts([...contacts, newContact]);
         toast.success('Contact added successfully!');
       }
-      await fetchContacts();
       handleCloseModal();
     } catch (e) {
-      setError('Failed to save contact');
-      toast.error('Failed to save contact');
+      const errorMessage =
+        e.response?.data?.message || 'Failed to save contact';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      await fetchContacts(); // Fallback to refetch
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -139,19 +151,24 @@ export default function ContactsTable() {
           </Button>
         </Box>
       ),
-      { duration: 2000 }
+      { duration: 5000 }
     );
   };
 
   const handleDelete = async (id) => {
     confirmDeleteToast(async () => {
+      setLoading(true);
       try {
         await deleteContact(id);
-        await fetchContacts();
+        setContacts(contacts.filter((contact) => contact._id !== id));
         toast.success('Contact deleted successfully!');
       } catch (e) {
-        setError('Failed to delete contact');
-        toast.error('Failed to delete contact');
+        const errorMessage =
+          e.response?.data?.message || 'Failed to delete contact';
+        toast.error(errorMessage);
+        await fetchContacts(); // Fallback to refetch
+      } finally {
+        setLoading(false);
       }
     });
   };
@@ -171,7 +188,7 @@ export default function ContactsTable() {
         width: '100%',
         maxWidth: '1200px',
         boxSizing: 'border-box',
-        mx: 'auto', // center horizontally
+        mx: 'auto',
       }}
     >
       <Stack
@@ -194,131 +211,142 @@ export default function ContactsTable() {
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => handleOpenModal()}
+          disabled={loading}
         >
           Add Contact
         </Button>
       </Stack>
-      <TableContainer
-        sx={{
-          borderRadius: 3,
-          overflow: 'hidden',
-          boxShadow: '0 2px 12px 0 rgba(25, 118, 210, 0.07)',
-        }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow
-              sx={{
-                background: (theme) =>
-                  `linear-gradient(90deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-              }}
-            >
-              <TableCell
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  border: 0,
-                }}
-              >
-                Name
-              </TableCell>
-              <TableCell
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  border: 0,
-                }}
-              >
-                Phone
-              </TableCell>
-              <TableCell
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  border: 0,
-                }}
-              >
-                Email
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: '#fff',
-                  fontWeight: 700,
-                  fontSize: '1rem',
-                  border: 0,
-                }}
-              >
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {contacts.map((contact, idx) => (
+
+      {loading && contacts.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography>Loading contacts...</Typography>
+        </Box>
+      ) : (
+        <TableContainer
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            boxShadow: '0 2px 12px 0 rgba(25, 118, 210, 0.07)',
+          }}
+        >
+          <Table>
+            <TableHead>
               <TableRow
-                key={contact.id}
                 sx={{
-                  background:
-                    idx % 2 === 0
-                      ? 'rgba(25, 118, 210, 0.04)'
-                      : 'rgba(25, 118, 210, 0.01)',
-                  transition: 'background 0.2s',
-                  '&:hover': {
-                    background: (theme) => theme.palette.action.hover,
-                  },
+                  background: (theme) =>
+                    `linear-gradient(90deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
                 }}
               >
                 <TableCell
                   sx={{
-                    fontWeight: 500,
-                    color: 'text.primary',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
                     border: 0,
                   }}
                 >
-                  {contact.name}
+                  Name
                 </TableCell>
-                <TableCell sx={{ color: 'text.secondary', border: 0 }}>
-                  {contact.phone}
-                </TableCell>
-                <TableCell sx={{ color: 'text.secondary', border: 0 }}>
-                  {contact.email}
-                </TableCell>
-                <TableCell align="right" sx={{ border: 0 }}>
-                  <IconButton
-                    onClick={() => handleOpenModal(contact)}
-                    color="primary"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={() => handleDelete(contact.id)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-            {contacts.length === 0 && !loading && (
-              <TableRow>
                 <TableCell
-                  colSpan={4}
-                  align="center"
                   sx={{
-                    color: 'text.secondary',
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
                     border: 0,
                   }}
                 >
-                  No contacts found.
+                  Phone
+                </TableCell>
+                <TableCell
+                  sx={{
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    border: 0,
+                  }}
+                >
+                  Email
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{
+                    color: '#fff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    border: 0,
+                  }}
+                >
+                  Actions
                 </TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {contacts.map((contact, idx) => (
+                <TableRow
+                  key={contact._id}
+                  sx={{
+                    background:
+                      idx % 2 === 0
+                        ? 'rgba(25, 118, 210, 0.04)'
+                        : 'rgba(25, 118, 210, 0.01)',
+                    transition: 'background 0.2s',
+                    '&:hover': {
+                      background: (theme) => theme.palette.action.hover,
+                    },
+                  }}
+                >
+                  <TableCell
+                    sx={{ fontWeight: 500, color: 'text.primary', border: 0 }}
+                  >
+                    {contact.name}
+                  </TableCell>
+                  <TableCell sx={{ color: 'text.secondary', border: 0 }}>
+                    {contact.phone}
+                  </TableCell>
+                  <TableCell sx={{ color: 'text.secondary', border: 0 }}>
+                    {contact.email}
+                  </TableCell>
+                  <TableCell align="right" sx={{ border: 0 }}>
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(contact);
+                      }}
+                      color="primary"
+                      disabled={loading}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      color="error"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDelete(contact._id);
+                      }}
+                      disabled={loading}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {contacts.length === 0 && !loading && (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    align="center"
+                    sx={{ color: 'text.secondary', border: 0 }}
+                  >
+                    No contacts found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+
       <Dialog
         open={modalOpen}
         onClose={handleCloseModal}
@@ -338,6 +366,7 @@ export default function ContactsTable() {
               onChange={handleChange}
               fullWidth
               required
+              disabled={loading}
             />
             <TextField
               label="Phone"
@@ -346,6 +375,7 @@ export default function ContactsTable() {
               onChange={handleChange}
               fullWidth
               required
+              disabled={loading}
             />
             <TextField
               label="Email"
@@ -354,17 +384,22 @@ export default function ContactsTable() {
               onChange={handleChange}
               fullWidth
               required
+              disabled={loading}
             />
-            {error && <div style={{ color: 'red' }}>{error}</div>}
+            {error && <Typography color="error">{error}</Typography>}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
-          <Button variant="contained" onClick={handleSave}>
+          <Button onClick={handleCloseModal} disabled={loading}>
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={handleSave} disabled={loading}>
             {editingContact ? 'Update' : 'Add'}
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
-}
+};
+
+export default ContactsTable;

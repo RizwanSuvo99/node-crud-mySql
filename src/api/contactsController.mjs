@@ -13,6 +13,9 @@ export const getAllContacts = async (req, res) => {
 export const getContactById = async (req, res) => {
   try {
     const contact = await contacts.getContactById(parseInt(req.params.id));
+    if (!contact) {
+      return res.status(404).json({ message: 'Contact not found' });
+    }
     res.json(contact);
   } catch (error) {
     console.error('Error fetching Single Contact:', error);
@@ -23,12 +26,9 @@ export const getContactById = async (req, res) => {
 export const createContact = async (req, res) => {
   try {
     const { name, phone, email } = req.body;
-    let contact = await contacts.createContact({
-      name,
-      phone,
-      email,
-    });
-    res.json(contact);
+    // Basic validation can also be added here if you want
+    let contact = await contacts.createContact({ name, phone, email });
+    res.status(201).json(contact);
   } catch (error) {
     console.error('Error Creating Single Contact:', error);
     res.status(500).json({ message: 'Internal Server Error' });

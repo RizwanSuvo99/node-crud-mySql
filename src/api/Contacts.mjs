@@ -1,52 +1,78 @@
-import pool from './db.js';
+import db from './db.js';
+
 class Contacts {
+  constructor() {
+    this.collection = db.collection('contacts');
+  }
+
+  // Get all contacts
   async getAllContacts() {
-    const [rows] = await pool.query('SELECT * FROM contacts');
-    return rows;
+    return await this.collection.find({}).toArray();
   }
 
+  // Get a single contact by numeric ID
   async getContactById(id) {
-    const [rows] = await pool.query('SELECT * FROM contacts WHERE id = ?', [
-      id,
-    ]);
-    return rows[0];
+    try {
+      return await this.collection.findOne({ _id: id });
+    } catch (err) {
+      console.error('Error finding contact with ID:', id, err);
+      return null;
+    }
   }
 
+  // Create a new contact with incremented numeric ID
   async createContact(contact) {
     const { name, phone, email } = contact;
-    const [result] = await pool.query(
-      'INSERT INTO contacts (name, phone, email) VALUES (?, ?, ?)',
-      [name, phone, email]
-    );
-    return contact;
-  }
 
-  async updateContactById(id, updatedContact) {
-    const contact = await this.getContactById(id);
-    if (!contact) return null;
+    const latest = await this.collection
+      .find()
+      .sort({ _id: -1 })
+      .limit(1)
+      .toArray();
+    const nextId = latest.length === 0 ? 1 : latest[0]._id + 1;
 
-    const { name, phone, email } = {
-      ...contact,
-      ...updatedContact,
+    const newContact = {
+      _id: nextId,
+      name,
+      phone,
+      email,
     };
 
-    await pool.query(
-      'UPDATE contacts SET name = ?, phone = ?, email = ? WHERE id = ?',
-      [name, phone, email, id]
-    );
-
-    return { id, name, phone, email };
+    await this.collection.insertOne(newContact);
+    return newContact;
   }
 
-  async deleteContactById(id) {
-    const contact = await this.getContactById(id);
-    if (!contact) return null;
+  // Update a contact by numeric ID
+  async updateContactById(id, updatedContact) {
+    try {
+      const result = await this.collection.findOneAndUpdate(
+        { _id: id },
+        { $set: updatedContact },
+        { returnDocument: 'after' }
+      );
 
-    await pool.query('DELETE FROM contacts WHERE id = ?', [id]);
-    return contact;
+      return updatedContact;
+    } catch (err) {
+      console.error('Update failed for ID:', id, err);
+      return null;
+    }
+  }
+
+  // Delete a contact by numeric ID
+  async deleteContactById(id) {
+    try {
+      const result = await this.collection.findOneAndDelete({ _id: id });
+      if (!result.value) {
+        console.log(`No contact found with ID ${id}`);
+        return null;
+      }
+      return result.value;
+    } catch (err) {
+      console.error('Delete failed for ID:', id, err);
+      return null;
+    }
   }
 }
 
 const contacts = new Contacts();
-
 export default contacts;
